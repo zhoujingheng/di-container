@@ -85,7 +85,13 @@ public class ContainerTest {
                     context.bind(Component.class, ComponentWithNoInjectNorDefaultConstructor.class);
                 });
             }
+
             //TODO: dependencies not exist
+            @Test
+            public void should_throw_exception_if_dependence_not_found() {
+                context.bind(Component.class, ComponentWithInjectConstructor.class);
+                assertThrows(DependencyNotFoundException.class, () -> context.get(Component.class));
+            }
         }
 
         @Nested
