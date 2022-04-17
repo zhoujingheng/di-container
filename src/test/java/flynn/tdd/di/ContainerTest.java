@@ -32,7 +32,6 @@ public class ContainerTest {
 
         //TODO: abstract class
         //TODO: interface
-        //TODO: Component does not exist
         @Test
         public void should_return_empty_if_component_not_define(){
             Optional<Component> component = context.get(Component.class);
@@ -98,6 +97,13 @@ public class ContainerTest {
                 context.bind(Component.class, ComponentWithInjectConstructor.class);
                 assertThrows(DependencyNotFoundException.class, () -> context.get(Component.class));
             }
+
+            @Test
+            public void should_throw_exception_if_cyclic_dependencies_found() {
+                context.bind(Component.class, ComponentWithInjectConstructor.class);
+                context.bind(Dependency.class, DependencyDependedOnComponent.class);
+                assertThrows(CyclicDependenciesFound.class, () -> context.get(Component.class));
+            }
         }
 
         @Nested
@@ -120,7 +126,6 @@ public class ContainerTest {
     public class LifecycleManagement {
 
     }
-
 }
 
 interface Component {
@@ -173,5 +178,15 @@ class DependencyWithInjectConstructor implements Dependency {
 
     public String getDependency() {
         return dependency;
+    }
+}
+
+class DependencyDependedOnComponent implements Dependency{
+
+    private Component component;
+
+    @Inject
+    public DependencyDependedOnComponent(Component component) {
+        this.component = component;
     }
 }
