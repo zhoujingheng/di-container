@@ -8,8 +8,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static java.util.Arrays.stream;
 
@@ -22,15 +22,13 @@ public class Context {
 
     public <Type, Implementation extends Type>
     void bind(Class<Type> type, Class<Implementation> implementation) {
-        Constructor<?>[] injectConstructors = stream(implementation.getConstructors()).filter(c -> c.isAnnotationPresent(Inject.class))
-                .toArray(Constructor<?>[]::new);
 
         Constructor<Implementation> injectConstructor = getInjectConstructor(implementation);
 
         providers.put(type, (Provider<Type>) () -> {
             try {
                 Object[] dependencies = stream(injectConstructor.getParameters())
-                        .map(p -> get(p.getType()))
+                        .map(p -> get(p.getType()).orElseThrow(DependencyNotFoundException::new))
                         .toArray(Object[]::new);
                 return (Type) injectConstructor.newInstance(dependencies);
             } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
@@ -53,9 +51,7 @@ public class Context {
         });
     }
 
-    public <Type> Type get(Class<Type> type) {
-        if(!providers.containsKey(type)) throw new DependencyNotFoundException();
-        return (Type) providers.get(type).get();
+    public <Type> Optional<Type> get(Class<Type> type) {
+        return Optional.ofNullable(providers.get(type)).map(provider -> ((Type) provider.get()));
     }
-
 }
