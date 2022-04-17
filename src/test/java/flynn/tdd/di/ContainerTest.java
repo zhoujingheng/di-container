@@ -5,7 +5,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.awt.*;
+
 import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class ContainerTest {
 
@@ -58,7 +61,7 @@ public class ContainerTest {
             public void should_bind_type_to_a_class_with_transitive_dependencies() {
                 context.bind(Component.class, ComponentWithInjectConstructor.class);
                 context.bind(Dependency.class, DependencyWithInjectConstructor.class);
-                context.bind(String.class,"indirect dependency");
+                context.bind(String.class, "indirect dependency");
 
                 Component instance = context.get(Component.class);
                 assertNotNull(instance);
@@ -70,6 +73,12 @@ public class ContainerTest {
             }
 
             //TODO: multi inject constructors
+            @Test
+            public void should_throw_exception_if_multi_inject_constructors_provided() {
+                assertThrows(IllegalComponentException.class, () -> {
+                    context.bind(Component.class, ComponentWithMultiInjectConstructors.class);
+                });
+            }
             //TODO: no default constructor and inject constructor
             //TODO: dependencies not exist
         }
@@ -94,6 +103,7 @@ public class ContainerTest {
     public class LifecycleManagement {
 
     }
+
 }
 
 interface Component {
@@ -117,6 +127,17 @@ class ComponentWithInjectConstructor implements Component {
 
     public Dependency getDependency() {
         return dependency;
+    }
+}
+
+
+class ComponentWithMultiInjectConstructors implements Component {
+    @Inject
+    public ComponentWithMultiInjectConstructors(String name,double value) {
+    }
+
+    @Inject
+    public ComponentWithMultiInjectConstructors(String name) {
     }
 }
 

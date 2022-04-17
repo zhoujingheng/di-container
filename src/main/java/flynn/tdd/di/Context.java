@@ -6,7 +6,6 @@ import jakarta.inject.Provider;
 import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import static java.util.Arrays.stream;
 
@@ -19,6 +18,10 @@ public class Context {
 
     public <Type, Implementation extends Type>
     void bind(Class<Type> type, Class<Implementation> implementation) {
+        Constructor<?>[] injectConstructors = stream(implementation.getConstructors()).filter(c -> c.isAnnotationPresent(Inject.class))
+                .toArray(Constructor<?>[]::new);
+        if(injectConstructors.length>1) throw new IllegalComponentException();
+
         providers.put(type, (Provider<Type>) () -> {
             try {
                 Constructor<Implementation> injectConstructor = getInjectConstructor(implementation);
@@ -33,15 +36,14 @@ public class Context {
     }
 
     private <Type> Constructor<Type> getInjectConstructor(Class<Type> implementation) {
-        Stream<Constructor<?>> injectConstructors = stream(implementation.getConstructors())
-                .filter(c -> c.isAnnotationPresent(Inject.class));
-        return (Constructor<Type>) injectConstructors.findFirst().orElseGet(() -> {
-            try {
-                return implementation.getConstructor();
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        return (Constructor<Type>) stream(implementation.getConstructors())
+                .filter(c -> c.isAnnotationPresent(Inject.class)).findFirst().orElseGet(() -> {
+                    try {
+                        return implementation.getConstructor();
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     public <Type> Type get(Class<Type> type) {
