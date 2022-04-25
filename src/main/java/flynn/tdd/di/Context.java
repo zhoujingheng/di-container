@@ -25,26 +25,12 @@ public class Context {
 
         Constructor<Implementation> injectConstructor = getInjectConstructor(implementation);
 
-        providers.put(type, getTypeProvider(injectConstructor));
-    }
-
-    private <Type> Provider<Type> getTypeProvider(Constructor<Type> injectConstructor) {
-        return new ConstructorInjectionProvider<>(injectConstructor);
-    }
-
-    private <Type> Type getImplementation(Constructor<Type> injectConstructor) {
-        try {
-            Object[] dependencies = stream(injectConstructor.getParameters())
-                    .map(p -> get(p.getType()).orElseThrow(DependencyNotFoundException::new))
-                    .toArray(Object[]::new);
-            return injectConstructor.newInstance(dependencies);
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        }
+        providers.put(type, new ConstructorInjectionProvider<Implementation>(injectConstructor));
     }
 
     class ConstructorInjectionProvider<T> implements Provider<T> {
-        Constructor<T> injectConstructor;
+        private Constructor<T> injectConstructor;
+        private boolean constructing = false;
 
         public ConstructorInjectionProvider(Constructor<T> injectConstructor) {
             this.injectConstructor = injectConstructor;
@@ -52,7 +38,18 @@ public class Context {
 
         @Override
         public T get() {
-            return getImplementation(injectConstructor);
+            if(constructing) throw new CyclicDependenciesFound();
+            try {
+                constructing = true;
+                Object[] dependencies = stream(injectConstructor.getParameters())
+                        .map(p -> Context.this.get(p.getType()).orElseThrow(DependencyNotFoundException::new))
+                        .toArray(Object[]::new);
+                return injectConstructor.newInstance(dependencies);
+            } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            } finally {
+                constructing = false;
+            }
         }
     }
 
