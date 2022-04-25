@@ -4,8 +4,12 @@ import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.internal.util.collections.Sets;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -33,7 +37,7 @@ public class ContainerTest {
         //TODO: abstract class
         //TODO: interface
         @Test
-        public void should_return_empty_if_component_not_define(){
+        public void should_return_empty_if_component_not_define() {
             Optional<Component> component = context.get(Component.class);
             assertTrue(component.isEmpty());
         }
@@ -117,7 +121,13 @@ public class ContainerTest {
             public void should_throw_exception_if_cyclic_dependencies_found() {
                 context.bind(Component.class, ComponentWithInjectConstructor.class);
                 context.bind(Dependency.class, DependencyDependedOnComponent.class);
-                assertThrows(CyclicDependenciesFound.class, () -> context.get(Component.class));
+                CyclicDependenciesFoundException exception = assertThrows(CyclicDependenciesFoundException.class, () -> context.get(Component.class));
+
+                Set<? extends Class<?>> classes = Sets.newSet(exception.getComponents());
+
+                assertEquals(2, classes.size());
+                assertTrue(classes.contains(Component.class));
+                assertTrue(classes.contains(Dependency.class));
             }
 
             @Test
@@ -125,7 +135,13 @@ public class ContainerTest {
                 context.bind(Component.class, ComponentWithInjectConstructor.class);
                 context.bind(Dependency.class, DependencyDependedOnAnotherDependency.class);
                 context.bind(AnotherDependency.class, AnotherDependencyDependedOnComponent.class);
-                assertThrows(CyclicDependenciesFound.class, () -> context.get(Component.class));
+
+                CyclicDependenciesFoundException exception = assertThrows(CyclicDependenciesFoundException.class, () -> context.get(Component.class));
+                List<Class<?>> components = Arrays.asList(exception.getComponents());
+                assertEquals(3, components.size());
+                assertTrue(components.contains(Component.class));
+                assertTrue(components.contains(Dependency.class));
+                assertTrue(components.contains(AnotherDependency.class));
             }
         }
 
@@ -181,7 +197,7 @@ class ComponentWithInjectConstructor implements Component {
 
 class ComponentWithMultiInjectConstructors implements Component {
     @Inject
-    public ComponentWithMultiInjectConstructors(String name,double value) {
+    public ComponentWithMultiInjectConstructors(String name, double value) {
     }
 
     @Inject
@@ -207,7 +223,7 @@ class DependencyWithInjectConstructor implements Dependency {
     }
 }
 
-class DependencyDependedOnComponent implements Dependency{
+class DependencyDependedOnComponent implements Dependency {
 
     private Component component;
 
@@ -217,7 +233,7 @@ class DependencyDependedOnComponent implements Dependency{
     }
 }
 
-class AnotherDependencyDependedOnComponent implements AnotherDependency{
+class AnotherDependencyDependedOnComponent implements AnotherDependency {
     private Component component;
 
     @Inject
@@ -226,7 +242,7 @@ class AnotherDependencyDependedOnComponent implements AnotherDependency{
     }
 }
 
-class DependencyDependedOnAnotherDependency implements Dependency{
+class DependencyDependedOnAnotherDependency implements Dependency {
     private AnotherDependency anotherDependency;
 
     @Inject
