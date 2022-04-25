@@ -25,16 +25,35 @@ public class Context {
 
         Constructor<Implementation> injectConstructor = getInjectConstructor(implementation);
 
-        providers.put(type, (Provider<Type>) () -> {
-            try {
-                Object[] dependencies = stream(injectConstructor.getParameters())
-                        .map(p -> get(p.getType()).orElseThrow(DependencyNotFoundException::new))
-                        .toArray(Object[]::new);
-                return (Type) injectConstructor.newInstance(dependencies);
-            } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        providers.put(type, getTypeProvider(injectConstructor));
+    }
+
+    private <Type> Provider<Type> getTypeProvider(Constructor<Type> injectConstructor) {
+        return new ConstructorInjectionProvider<>(injectConstructor);
+    }
+
+    private <Type> Type getImplementation(Constructor<Type> injectConstructor) {
+        try {
+            Object[] dependencies = stream(injectConstructor.getParameters())
+                    .map(p -> get(p.getType()).orElseThrow(DependencyNotFoundException::new))
+                    .toArray(Object[]::new);
+            return injectConstructor.newInstance(dependencies);
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    class ConstructorInjectionProvider<T> implements Provider<T> {
+        Constructor<T> injectConstructor;
+
+        public ConstructorInjectionProvider(Constructor<T> injectConstructor) {
+            this.injectConstructor = injectConstructor;
+        }
+
+        @Override
+        public T get() {
+            return getImplementation(injectConstructor);
+        }
     }
 
     private <Type> Constructor<Type> getInjectConstructor(Class<Type> implementation) {
