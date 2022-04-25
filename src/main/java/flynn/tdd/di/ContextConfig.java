@@ -1,36 +1,35 @@
 package flynn.tdd.di;
 
-import jakarta.inject.Inject;
-import jakarta.inject.Provider;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Parameter;
 import java.util.*;
-import java.util.stream.Collectors;
 
-import static java.util.Arrays.*;
+import static java.util.List.of;
 
 public class ContextConfig {
     private Map<Class<?>, ComponentProvider<?>> providers = new HashMap<>();
-    private Map<Class<?>, List<Class<?>>> dependencies = new HashMap<>();
 
     public <Type> void bind(Class<Type> type, Type instance) {
-        providers.put(type, context -> instance);
-        dependencies.put(type, asList());
+        providers.put(type, new ComponentProvider<Type>() {
+            @Override
+            public Type get(Context context) {
+                return instance;
+            }
+
+            @Override
+            public List<Class<?>> getDependencies() {
+                return of();
+            }
+        });
     }
 
     public <Type, Implementation extends Type>
     void bind(Class<Type> type, Class<Implementation> implementation) {
 
-        Constructor<Implementation> injectConstructor = getInjectConstructor(implementation);
-
-        providers.put(type, new ConstructorInjectionProvider<>(type, injectConstructor));
-        dependencies.put(type, stream(injectConstructor.getParameters()).map(Parameter::getType).collect(Collectors.toList()));
+        providers.put(type, new ConstructorInjectionProvider<>(implementation) {
+        });
     }
 
     public Context getContext() {
-        dependencies.keySet().forEach(component -> checkDependencies(component, new Stack<>()));
+        providers.keySet().forEach(component -> checkDependencies(component, new Stack<>()));
 
         return new Context() {
             @Override
@@ -41,8 +40,8 @@ public class ContextConfig {
     }
 
     private void checkDependencies(Class<?> component, Stack<Class<?>> visiting) {
-        for (Class<?> dependency : dependencies.get(component)) {
-            if (!dependencies.containsKey(dependency)) throw new DependencyNotFoundException(component, dependency);
+        for (Class<?> dependency : providers.get(component).getDependencies()) {
+            if (!providers.containsKey(dependency)) throw new DependencyNotFoundException(component, dependency);
             if (visiting.contains(dependency)) throw new CyclicDependenciesFoundException(visiting);
             visiting.push(dependency);
             checkDependencies(dependency, visiting);
@@ -52,45 +51,8 @@ public class ContextConfig {
 
     interface ComponentProvider<T> {
         T get(Context context);
-    }
 
-    class ConstructorInjectionProvider<T> implements ComponentProvider<T> {
-        private Class<?> componentType;
-        private Constructor<T> injectConstructor;
-
-        public ConstructorInjectionProvider(Class<?> componentType, Constructor<T> injectConstructor) {
-            this.componentType = componentType;
-            this.injectConstructor = injectConstructor;
-        }
-
-        @Override
-        public T get(Context context) {
-            try {
-                Object[] dependencies = stream(injectConstructor.getParameters())
-                        .map(p -> context.get(p.getType()).get())
-                        .toArray(Object[]::new);
-                return injectConstructor.newInstance(dependencies);
-            } catch (CyclicDependenciesFoundException e) {
-
-                throw new CyclicDependenciesFoundException(componentType, e);
-            } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
-
-    private <Type> Constructor<Type> getInjectConstructor(Class<Type> implementation) {
-        List<Constructor<?>> injectConstructors = stream(implementation.getConstructors())
-                .filter(c -> c.isAnnotationPresent(Inject.class)).collect(Collectors.toList());
-        if (injectConstructors.size() > 1) throw new IllegalComponentException();
-
-        return (Constructor<Type>) injectConstructors.stream().findFirst().orElseGet(() -> {
-            try {
-                return implementation.getConstructor();
-            } catch (NoSuchMethodException e) {
-                throw new IllegalComponentException();
-            }
-        });
+        List<Class<?>> getDependencies();
     }
 
 }
