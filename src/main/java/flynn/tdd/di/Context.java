@@ -25,24 +25,30 @@ public class Context {
 
         Constructor<Implementation> injectConstructor = getInjectConstructor(implementation);
 
-        providers.put(type, new ConstructorInjectionProvider<Implementation>(injectConstructor));
+        providers.put(type, new ConstructorInjectionProvider<Implementation>(type, injectConstructor));
+    }
+
+    public <Type> Optional<Type> get(Class<Type> type) {
+        return Optional.ofNullable(providers.get(type)).map(provider -> ((Type) provider.get()));
     }
 
     class ConstructorInjectionProvider<T> implements Provider<T> {
+        private Class<?> componentType;
         private Constructor<T> injectConstructor;
         private boolean constructing = false;
 
-        public ConstructorInjectionProvider(Constructor<T> injectConstructor) {
+        public ConstructorInjectionProvider(Class<?> componentType, Constructor<T> injectConstructor) {
+            this.componentType = componentType;
             this.injectConstructor = injectConstructor;
         }
 
         @Override
         public T get() {
-            if(constructing) throw new CyclicDependenciesFound();
+            if (constructing) throw new CyclicDependenciesFound();
             try {
                 constructing = true;
                 Object[] dependencies = stream(injectConstructor.getParameters())
-                        .map(p -> Context.this.get(p.getType()).orElseThrow(DependencyNotFoundException::new))
+                        .map(p -> Context.this.get(p.getType()).orElseThrow(() -> new DependencyNotFoundException(componentType, p.getType())))
                         .toArray(Object[]::new);
                 return injectConstructor.newInstance(dependencies);
             } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
@@ -67,7 +73,4 @@ public class Context {
         });
     }
 
-    public <Type> Optional<Type> get(Class<Type> type) {
-        return Optional.ofNullable(providers.get(type)).map(provider -> ((Type) provider.get()));
-    }
 }
