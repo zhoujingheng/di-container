@@ -154,7 +154,48 @@ public class ContainerTest {
 
         @Nested
         public class FiledInjection {
+            static class ComponentWithFiledInjection {
+                @Inject
+                Dependency dependency;
+            }
 
+            static class SubclassWithFieldInjection extends ComponentWithFiledInjection{}
+
+            @Test
+            public void should_inject_dependency_via_filed() {
+                Dependency dependency = new Dependency() {
+
+                };
+                config.bind(Dependency.class, dependency);
+                config.bind(ComponentWithFiledInjection.class, ComponentWithFiledInjection.class);
+
+                ComponentWithFiledInjection component = config.getContext().get(ComponentWithFiledInjection.class).get();
+                assertSame(dependency, component.dependency);
+            }
+
+            @Test
+            public void should_inject_dependency_via_superclass_inject_filed() {
+                Dependency dependency = new Dependency() {
+
+                };
+                config.bind(Dependency.class, dependency);
+                config.bind(SubclassWithFieldInjection.class, SubclassWithFieldInjection.class);
+
+                SubclassWithFieldInjection component = config.getContext().get(SubclassWithFieldInjection.class).get();
+                assertSame(dependency, component.dependency);
+            }
+
+            //TODO throw exception if dependency not found
+
+            //TODO throw exception if filed is final
+
+            @Test
+            public void should_include_field_dependency_in_dependencies() {
+                ConstructorInjectionProvider<ComponentWithFiledInjection> provider = new ConstructorInjectionProvider<>(ComponentWithFiledInjection.class);
+                assertArrayEquals(new Class<?>[]{Dependency.class}, provider.getDependencies().toArray(Class<?>[]::new));
+            }
+
+            //TODO throw excepiton if cyclic dependency
         }
 
         @Nested
