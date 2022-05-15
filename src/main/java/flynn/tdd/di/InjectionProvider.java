@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
+import static java.util.Arrays.compare;
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.concat;
 
@@ -56,8 +57,8 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
 
     private static <T> List<Method> getInjectMethods(Class<T> component) {
         List<Method> injectMethods = traverse(component, (methods, current) -> injectable(current.getDeclaredMethods())
-                        .filter(m -> isOverrideByInjectMethod(methods, m))
-                        .filter(m -> isOverrideByNoInjectMethod(component, m)).toList());
+                .filter(m -> isOverrideByInjectMethod(methods, m))
+                .filter(m -> isOverrideByNoInjectMethod(component, m)).toList());
         Collections.reverse(injectMethods);
         return injectMethods;
     }
@@ -110,12 +111,17 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
     }
 
     private static Object[] toDependencies(Context context, Executable executable) {
-        return stream(executable.getParameterTypes())
-                .map(t -> context.get(t).get())
-                .toArray(Object[]::new);
+        return stream(executable.getParameters()).map(
+                p -> {
+                    Type type = p.getParameterizedType();
+                    if (type instanceof ParameterizedType) return context.get(((ParameterizedType) type)).get();
+                    return context.get(((Class<?>) type)).get();
+                }).toArray(Object[]::new);
     }
 
     private static Object toDependency(Context context, Field field) {
+        Type type = field.getGenericType();
+        if (type instanceof ParameterizedType) return context.get(((ParameterizedType) type)).get();
         return context.get(field.getType()).get();
     }
 }

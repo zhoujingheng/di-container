@@ -24,6 +24,24 @@ public class ContainerTest {
     }
 
     @Nested
+    public class DependenciesSelection {
+        @Nested
+        public class ProviderType{
+
+        }
+
+        @Nested
+        public class Qualifier{
+
+        }
+    }
+
+    @Nested
+    public class LifecycleManagement {
+
+    }
+
+    @Nested
     public class ComponentConstruction {
         @Test
         public void should_bind_type_to_a_specific_instance() {
@@ -81,16 +99,6 @@ public class ContainerTest {
                 assertTrue(components.contains(AnotherDependency.class));
             }
         }
-
-    }
-
-    @Nested
-    public class DependenciesSelection {
-
-    }
-
-    @Nested
-    public class LifecycleManagement {
 
     }
 }
