@@ -3,6 +3,7 @@ package flynn.tdd.di;
 import jakarta.inject.Provider;
 
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.*;
 
 import static java.util.List.of;
@@ -54,6 +55,11 @@ public class ContextConfig {
         T get(Context context);
 
         default List<Class<?>> getDependencies() {
+            return of();
+        }
+
+
+        default List<Type> getDependencyTypes() {
             return of();
         }
     }

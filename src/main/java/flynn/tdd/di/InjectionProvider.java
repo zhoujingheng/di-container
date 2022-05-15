@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
-import static java.util.Arrays.compare;
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.concat;
 
@@ -53,6 +52,13 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
                         injectFields.stream().map(Field::getType)),
                 injectMethods.stream().flatMap(m -> stream(m.getParameterTypes()))
         ).toList();
+    }
+
+    @Override
+    public List<Type> getDependencyTypes() {
+        return concat(concat(stream(injectConstructor.getParameters()).map(Parameter::getParameterizedType),
+                        injectFields.stream().map(Field::getGenericType)),
+                injectMethods.stream().flatMap(m -> stream(m.getParameters()).map(Parameter::getParameterizedType))).toList();
     }
 
     private static <T> List<Method> getInjectMethods(Class<T> component) {
