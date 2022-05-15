@@ -208,6 +208,16 @@ public class ContainerTest {
             //TODO throw exception if dependency not found
 
             //TODO throw exception if filed is final
+            static class FinalInjectFiled {
+
+                @Inject
+                final Dependency dependency = null;
+            }
+
+            @Test
+            public void should_throw_exception_if_inject_field_is_final() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(FinalInjectFiled.class));
+            }
 
             @Test
             public void should_include_field_dependency_in_dependencies() {
@@ -328,6 +338,18 @@ public class ContainerTest {
             }
 
             //TODO throw exception if type parameter defined
+            static class InjectMethodWithTypeParameter {
+
+                @Inject
+                <T> void install(){
+
+                }
+            }
+
+            @Test
+            public void should_throw_exception_if_inject_method_has_type_parameter() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(InjectMethodWithTypeParameter.class));
+            }
         }
     }
 
