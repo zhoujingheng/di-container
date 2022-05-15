@@ -50,6 +50,24 @@ public class ContainerTest {
 
         @Nested
         public class ConstructorInjection {
+
+            abstract class AbstractComponent implements Component {
+
+                @Inject
+                public AbstractComponent() {
+                }
+            }
+
+            @Test
+            public void should_throw_exception_if_component_is_abstract() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(AbstractComponent.class));
+            }
+
+            @Test
+            public void should_throw_exception_if_component_is_interface() {
+                assertThrows(IllegalComponentException.class, () -> new ConstructorInjectionProvider<>(Component.class));
+            }
+
             //TODO: abstract class
             //TODO: interface
 
