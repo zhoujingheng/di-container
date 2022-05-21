@@ -41,7 +41,7 @@ public class ContainerTest {
 
         @Test
         public void should_return_empty_if_component_not_define() {
-            Optional<Component> component = config.getContext().get(Component.class);
+            Optional<Component> component = config.getContext().get(Context.Ref.of(Component.class));
             assertTrue(component.isEmpty());
         }
 

@@ -38,7 +38,7 @@ public class ContextTest {
 
 
             Context context = config.getContext();
-            assertSame(instance, context.get(Component.class).get());
+            assertSame(instance, context.get(Context.Ref.of(Component.class)).get());
         }
 
 //        @ParameterizedTest(name = "supporting {0}")
@@ -93,12 +93,9 @@ public class ContextTest {
 
             Context context = config.getContext();
 
-            ParameterizedType type = new TypeLiteral<Provider<Component>>() {
-            }.getType();
-            assertEquals(Provider.class, type.getRawType());
-            assertEquals(Component.class, type.getActualTypeArguments()[0]);
-
-            Provider<Component> provider = (Provider<Component>) context.get(type).get();
+            Context.Ref<Provider<Component>> ref = new Context.Ref<>() {
+            };
+            Provider<Component> provider = context.get(ref).get();
             assertSame(instance, provider.get());
         }
 
@@ -109,16 +106,9 @@ public class ContextTest {
             config.bind(Component.class, instance);
 
             Context context = config.getContext();
-            ParameterizedType type = new TypeLiteral<List<Component>>() {
-            }.getType();
-            assertFalse(context.get(type).isPresent());
+            assertFalse(context.get(new Context.Ref<List<Component>>(){}).isPresent());
         }
 
-        static abstract class TypeLiteral<T> {
-            public ParameterizedType getType() {
-                return (ParameterizedType) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
-            }
-        }
     }
 
     @Nested
@@ -275,7 +265,7 @@ public class ContextTest {
             config.bind(Dependency.class, CyclicDependencyProviderConstructor.class);
 
             Context context = config.getContext();
-            assertTrue(context.get(Component.class).isPresent());
+            assertTrue(context.get(Context.Ref.of(Component.class)).isPresent());
         }
     }
 }

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Optional;
 
 import static org.junit.Assert.*;
@@ -27,8 +26,8 @@ public class InjectTest {
     @BeforeEach
     public void setup() throws NoSuchFieldException {
         dependencyProviderType = (ParameterizedType) InjectTest.class.getDeclaredField("dependencyProvider").getGenericType();
-        when(context.get(eq(Dependency.class))).thenReturn(Optional.of(dependency));
-        when(context.get(eq(dependencyProviderType))).thenReturn(Optional.of(dependencyProvider));
+        when(context.get(eq(Context.Ref.of(Dependency.class)))).thenReturn(Optional.of(dependency));
+        when(context.get(eq(Context.Ref.of(dependencyProviderType)))).thenReturn(Optional.of(dependencyProvider));
     }
 
     @Nested
@@ -67,7 +66,7 @@ public class InjectTest {
             @Test
             public void should_include_dependency_from_inject_constructor() {
                 InjectionProvider<InjectConstructor> provider = new InjectionProvider<>(InjectConstructor.class);
-                assertArrayEquals(new Type[]{Dependency.class}, provider.getDependencies().toArray(Type[]::new));
+                assertArrayEquals(new Context.Ref[]{Context.Ref.of(Dependency.class)}, provider.getDependencies().toArray(Context.Ref[]::new));
             }
 
             static class ProviderInjectConstructor {
@@ -88,7 +87,7 @@ public class InjectTest {
             @Test
             public void should_include_provider_type_from_inject_constructor() {
                 InjectionProvider<ProviderInjectConstructor> provider = new InjectionProvider<>(ProviderInjectConstructor.class);
-                assertArrayEquals(new Type[]{dependencyProviderType}, provider.getDependencies().toArray(Type[]::new));
+                assertArrayEquals(new Context.Ref[]{Context.Ref.of(dependencyProviderType)}, provider.getDependencies().toArray(Context.Ref[]::new));
             }
         }
 
@@ -158,13 +157,13 @@ public class InjectTest {
             @Test
             public void should_include_dependency_from_field_dependency() {
                 InjectionProvider<ComponentWithFiledInjection> provider = new InjectionProvider<>(ComponentWithFiledInjection.class);
-                assertArrayEquals(new Type[]{Dependency.class}, provider.getDependencies().toArray(Type[]::new));
+                assertArrayEquals(new Context.Ref[]{Context.Ref.of(Dependency.class)}, provider.getDependencies().toArray(Context.Ref[]::new));
             }
 
             @Test
             public void should_include_provider_type_from_inject_filed() {
                 InjectionProvider<ProviderInjectFiled> provider = new InjectionProvider<>(ProviderInjectFiled.class);
-                assertArrayEquals(new Type[]{dependencyProviderType}, provider.getDependencies().toArray(Type[]::new));
+                assertArrayEquals(new Context.Ref[]{Context.Ref.of(dependencyProviderType)}, provider.getDependencies().toArray(Context.Ref[]::new));
             }
 
             static class ProviderInjectFiled {
@@ -291,13 +290,13 @@ public class InjectTest {
             @Test
             public void should_include_dependencies_from_inject_method() {
                 InjectionProvider<InjectMethodWithDependency> provider = new InjectionProvider<>(InjectMethodWithDependency.class);
-                assertArrayEquals(new Type[]{Dependency.class}, provider.getDependencies().toArray(Type[]::new));
+                assertArrayEquals(new Context.Ref[]{Context.Ref.of(Dependency.class)}, provider.getDependencies().toArray(Context.Ref[]::new));
             }
 
             @Test
             public void should_include_provider_type_from_inject_method() {
                 InjectionProvider<ProviderInjectMethod> provider = new InjectionProvider<>(ProviderInjectMethod.class);
-                assertArrayEquals(new Type[]{dependencyProviderType}, provider.getDependencies().toArray(Type[]::new));
+                assertArrayEquals(new Context.Ref[]{Context.Ref.of(dependencyProviderType)}, provider.getDependencies().toArray(Context.Ref[]::new));
             }
 
             static class ProviderInjectMethod {
