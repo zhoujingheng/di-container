@@ -41,7 +41,50 @@ public class ContextTest {
             assertSame(instance, context.get(Component.class).get());
         }
 
-        //TODO could get Provider<T> from context context
+//        @ParameterizedTest(name = "supporting {0}")
+//        @MethodSource
+//        public void should_bind_type_to_an_injectable_component(Class<? extends Component> componentType) {
+//            Dependency dependency = new Dependency() {
+//            };
+//            config.bind(Dependency.class, dependency);
+//            config.bind(Component.class, componentType);
+//
+//            Optional<Component> component = config.getContext().get(Component.class);
+//
+//            assertTrue(component.isPresent());
+//            assertSame(dependency, component.get().dependency());
+//        }
+
+        public static Stream<Arguments> should_bind_type_to_an_injectable_component() {
+            return Stream.of(Arguments.of(Named.of("Constructor Injection", ConstructorInjection.class))
+                    , Arguments.of(Named.of("Filed Injection", FiledInjection.class)),
+                    Arguments.of(Named.of("Method Injection", MethodInjection.class)));
+        }
+
+        static class ConstructorInjection implements Component {
+            private Dependency dependency;
+
+            @Inject
+            public ConstructorInjection(Dependency dependency) {
+                this.dependency = dependency;
+            }
+        }
+
+        static class FiledInjection implements Component {
+
+            @Inject
+            private Dependency dependency;
+        }
+
+        static class MethodInjection implements Component {
+            private Dependency dependency;
+
+            @Inject
+            void install(Dependency dependency) {
+                this.dependency = dependency;
+            }
+        }
+
         @Test
         public void should_retrieve_bind_type_as_provider() {
             Component instance = new Component() {
