@@ -6,6 +6,7 @@ import jakarta.inject.Provider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.lang.reflect.ParameterizedType;
 import java.util.Optional;
@@ -13,8 +14,7 @@ import java.util.Optional;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @Nested
 public class InjectTest {
@@ -130,14 +130,30 @@ public class InjectTest {
 
         @Nested
         class WithQualifier {
+            @BeforeEach
+            public void before() {
+                Mockito.reset(context);
+                when(context.get(eq(ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))))).thenReturn(Optional.of(dependency));
+            }
+
             static class InjectConstructor {
+                Dependency dependency;
+
                 @Inject
                 public InjectConstructor(@Named("ChoseOne") Dependency dependency) {
+                    this.dependency = dependency;
                 }
             }
 
             @Test
-            public void should_include_qualifier_with_dependency() {
+            public void should_inject_dependency_with_qualifier_via_constructor() {
+                InjectionProvider<InjectConstructor> provider = new InjectionProvider<>(InjectConstructor.class);
+                InjectConstructor component = provider.get(context);
+                assertSame(dependency, component.dependency);
+            }
+
+            @Test
+            public void should_include_dependency_with_qualifier() {
                 InjectionProvider<InjectConstructor> provider = new InjectionProvider<>(InjectConstructor.class);
 
                 assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))
@@ -211,6 +227,38 @@ public class InjectTest {
             }
         }
 
+        @Nested
+        class WithQualifier {
+
+            @BeforeEach
+            public void before() {
+                Mockito.reset(context);
+                when(context.get(eq(ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))))).thenReturn(Optional.of(dependency));
+            }
+
+            static class InjectFiled {
+                @Inject
+                @Named("ChoseOne")
+                Dependency dependency;
+
+            }
+
+            @Test
+            public void should_inject_dependency_with_qualifier_via_filed() {
+                InjectionProvider<InjectFiled> provider = new InjectionProvider<>(InjectFiled.class);
+                InjectFiled component = provider.get(context);
+                assertSame(dependency, component.dependency);
+            }
+
+
+            @Test
+            public void should_include_dependency_with_qualifier() {
+                InjectionProvider<InjectFiled> provider = new InjectionProvider<>(InjectFiled.class);
+
+                assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))
+                }, provider.getDependencies().toArray());
+            }
+        }
     }
 
     @Nested
@@ -348,5 +396,37 @@ public class InjectTest {
             }
         }
 
+        @Nested
+        class WithQualifier {
+            @BeforeEach
+            public void before() {
+                Mockito.reset(context);
+                when(context.get(eq(ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))))).thenReturn(Optional.of(dependency));
+            }
+
+            static class InjectMethod {
+                Dependency dependency;
+                @Inject
+                void install(@Named("ChoseOne") Dependency dependency) {
+                    this.dependency = dependency;
+                }
+            }
+
+            @Test
+            public void should_inject_dependency_with_qualifier_via_method() {
+                InjectionProvider<InjectMethod> provider = new InjectionProvider<>(InjectMethod.class);
+                InjectMethod component = provider.get(context);
+                assertSame(dependency, component.dependency);
+            }
+
+
+            @Test
+            public void should_include_dependency_with_qualifier() {
+                InjectionProvider<InjectMethod> provider = new InjectionProvider<>(InjectMethod.class);
+
+                assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))
+                }, provider.getDependencies().toArray());
+            }
+        }
     }
 }

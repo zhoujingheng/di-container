@@ -47,16 +47,29 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
 
     @Override
     public List<ComponentRef> getDependencies() {
-        return concat(concat(stream(injectConstructor.getParameters()).map(p -> toComponentRef(p)),
-                        injectFields.stream().map(Field::getGenericType).map(ComponentRef::of)),
-                injectMethods.stream().flatMap(m -> stream(m.getParameters()).map(Parameter::getParameterizedType).map(ComponentRef::of)))
+        return concat(concat(stream(injectConstructor.getParameters()).map(this::toComponentRef),
+                        injectFields.stream().map(f -> toComponentRef(f))),
+                injectMethods.stream().flatMap(m -> stream(m.getParameters()).map(this::toComponentRef)))
                 .toList();
     }
 
-    private ComponentRef<?> toComponentRef(Parameter p) {
-        Annotation qualifier = stream(p.getAnnotations()).filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class))
+    private ComponentRef toComponentRef(Field field) {
+        Annotation qualifier = getQualifier(field);
+        return ComponentRef.of(field.getGenericType(), qualifier);
+    }
+
+    private static Annotation getQualifier(Field field) {
+        return stream(field.getAnnotations()).filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class))
                 .findFirst().orElse(null);
-        return ComponentRef.of(p.getParameterizedType(), qualifier);
+    }
+
+    private ComponentRef<?> toComponentRef(Parameter parameter) {
+        return ComponentRef.of(parameter.getParameterizedType(), getQualifier(parameter));
+    }
+
+    private static Annotation getQualifier(Parameter parameter) {
+        return stream(parameter.getAnnotations()).filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class))
+                .findFirst().orElse(null);
     }
 
     private static <T> List<Method> getInjectMethods(Class<T> component) {
@@ -115,14 +128,14 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
     }
 
     private static Object[] toDependencies(Context context, Executable executable) {
-        return stream(executable.getParameters()).map(p -> toDependency(context, p.getParameterizedType())).toArray(Object[]::new);
+        return stream(executable.getParameters()).map(p -> toDependency(context, p.getParameterizedType(), getQualifier(p))).toArray(Object[]::new);
     }
 
     private static Object toDependency(Context context, Field field) {
-        return toDependency(context, field.getGenericType());
+        return toDependency(context, field.getGenericType(), getQualifier(field));
     }
 
-    private static Object toDependency(Context context, Type type) {
-        return context.get(ComponentRef.of(type)).get();
+    private static Object toDependency(Context context, Type type, Annotation qualifier) {
+        return context.get(ComponentRef.of(type, qualifier)).get();
     }
 }
