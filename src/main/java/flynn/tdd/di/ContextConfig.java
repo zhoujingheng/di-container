@@ -17,9 +17,6 @@ public class ContextConfig {
             components.put(new Component(type, qualifier), context -> instance);
     }
 
-    record Component(Class<?> type, Annotation qualifier) {
-    }
-
     public <Type, Implementation extends Type>
     void bind(Class<Type> type, Class<Implementation> implementation) {
 
@@ -40,7 +37,7 @@ public class ContextConfig {
         return new Context() {
 
             @Override
-            public <ComponentType> Optional<ComponentType> get(Ref<ComponentType> ref) {
+            public <ComponentType> Optional<ComponentType> get(ComponentRef<ComponentType> ref) {
                 if (ref.isContainer()) {
                     if (ref.getContainer() != Provider.class) return Optional.empty();
 
@@ -53,18 +50,18 @@ public class ContextConfig {
         };
     }
 
-    private <ComponentType> ComponentProvider<?> getProvider(Context.Ref<ComponentType> ref) {
-        return components.get(new Component(ref.getComponent(), ref.getQualifier()));
+    private <ComponentType> ComponentProvider<?> getProvider(ComponentRef<ComponentType> ref) {
+        return components.get(ref.component());
     }
 
     private void checkDependencies(Component component, Stack<Class<?>> visiting) {
-        for (Context.Ref dependency : components.get(component).getDependencies()) {
-            if (!components.containsKey(new Component(dependency.getComponent(), dependency.getQualifier())))
-                throw new DependencyNotFoundException(component.type(), dependency.getComponent());
+        for (ComponentRef dependency : components.get(component).getDependencies()) {
+            if (!components.containsKey(dependency.component()))
+                throw new DependencyNotFoundException(component.type(), dependency.getComponentType());
             if (!dependency.isContainer()) {
-                if (visiting.contains(dependency.getComponent())) throw new CyclicDependenciesFoundException(visiting);
-                visiting.push(dependency.getComponent());
-                checkDependencies(new Component(dependency.getComponent(), dependency.getQualifier()), visiting);
+                if (visiting.contains(dependency.getComponentType())) throw new CyclicDependenciesFoundException(visiting);
+                visiting.push(dependency.getComponentType());
+                checkDependencies(dependency.component(), visiting);
                 visiting.pop();
             }
         }
@@ -73,7 +70,7 @@ public class ContextConfig {
     interface ComponentProvider<T> {
         T get(Context context);
 
-        default List<Context.Ref> getDependencies() {
+        default List<ComponentRef> getDependencies() {
             return List.of();
         }
     }

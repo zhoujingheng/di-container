@@ -21,12 +21,12 @@ public class ContainerTest {
     @Nested
     public class DependenciesSelection {
         @Nested
-        public class ProviderType{
+        public class ProviderType {
 
         }
 
         @Nested
-        public class Qualifier{
+        public class Qualifier {
 
         }
     }
@@ -41,14 +41,17 @@ public class ContainerTest {
 
         @Test
         public void should_return_empty_if_component_not_define() {
-            Optional<Component> component = config.getContext().get(Context.Ref.of(Component.class));
+            Optional<TestComponent> component = config.getContext().get(ComponentRef.of(TestComponent.class));
             assertTrue(component.isEmpty());
         }
 
     }
 }
 
-interface Component {
+interface TestComponent {
+    default Dependency dependency() {
+        return null;
+    }
 }
 
 interface Dependency {
@@ -57,12 +60,12 @@ interface Dependency {
 interface AnotherDependency {
 }
 
-class ComponentWithDefaultConstructor implements Component {
+class ComponentWithDefaultConstructor implements TestComponent {
     public ComponentWithDefaultConstructor() {
     }
 }
 
-class ComponentWithInjectConstructor implements Component {
+class ComponentWithInjectConstructor implements TestComponent {
     private Dependency dependency;
 
     @Inject
@@ -76,7 +79,7 @@ class ComponentWithInjectConstructor implements Component {
 }
 
 
-class ComponentWithMultiInjectConstructors implements Component {
+class ComponentWithMultiInjectConstructors implements TestComponent {
     @Inject
     public ComponentWithMultiInjectConstructors(String name, double value) {
     }
@@ -86,7 +89,7 @@ class ComponentWithMultiInjectConstructors implements Component {
     }
 }
 
-class ComponentWithNoInjectNorDefaultConstructor implements Component {
+class ComponentWithNoInjectNorDefaultConstructor implements TestComponent {
     public ComponentWithNoInjectNorDefaultConstructor(String name) {
     }
 }
@@ -106,19 +109,19 @@ class DependencyWithInjectConstructor implements Dependency {
 
 class DependencyDependedOnComponent implements Dependency {
 
-    private Component component;
+    private TestComponent component;
 
     @Inject
-    public DependencyDependedOnComponent(Component component) {
+    public DependencyDependedOnComponent(TestComponent component) {
         this.component = component;
     }
 }
 
 class AnotherDependencyDependedOnComponent implements AnotherDependency {
-    private Component component;
+    private TestComponent component;
 
     @Inject
-    public AnotherDependencyDependedOnComponent(Component component) {
+    public AnotherDependencyDependedOnComponent(TestComponent component) {
         this.component = component;
     }
 }
