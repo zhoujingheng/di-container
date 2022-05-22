@@ -19,6 +19,10 @@ public class ComponentRef<ComponentType> {
         return new ComponentRef(type, null);
     }
 
+    public static ComponentRef of(Type type, Annotation qualifier) {
+        return new ComponentRef(type, qualifier);
+    }
+
     private Type container;
     private Component component;
 
@@ -73,4 +77,5 @@ public class ComponentRef<ComponentType> {
     public int hashCode() {
         return Objects.hash(container, component);
     }
+
 }
