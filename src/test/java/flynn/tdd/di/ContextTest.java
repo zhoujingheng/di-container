@@ -42,13 +42,13 @@ public class ContextTest {
 
 //        @ParameterizedTest(name = "supporting {0}")
 //        @MethodSource
-//        public void should_bind_type_to_an_injectable_component(Class<? extends Component> componentType) {
+//        public void should_bind_type_to_an_injectable_component(Class<? extends TestComponent> componentType) {
 //            Dependency dependency = new Dependency() {
 //            };
 //            config.bind(Dependency.class, dependency);
 //            config.bind(TestComponent.class, componentType);
 //
-//            Optional<TestComponent> component = config.getContext().get(TestComponent.class);
+//            Optional<TestComponent> component = config.getContext().get(ComponentRef.of(TestComponent.class));
 //
 //            assertTrue(component.isPresent());
 //            assertSame(dependency, component.get().dependency());
@@ -61,7 +61,7 @@ public class ContextTest {
         }
 
         static class ConstructorInjection implements TestComponent {
-            private Dependency dependency;
+            Dependency dependency;
 
             @Inject
             public ConstructorInjection(Dependency dependency) {
@@ -72,11 +72,11 @@ public class ContextTest {
         static class FiledInjection implements TestComponent {
 
             @Inject
-            private Dependency dependency;
+            Dependency dependency;
         }
 
         static class MethodInjection implements TestComponent {
-            private Dependency dependency;
+            Dependency dependency;
 
             @Inject
             void install(Dependency dependency) {
