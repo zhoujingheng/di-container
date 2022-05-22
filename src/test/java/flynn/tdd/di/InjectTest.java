@@ -159,6 +159,18 @@ public class InjectTest {
                 assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))
                 }, provider.getDependencies().toArray());
             }
+
+            static class MultiQualifiersInjectConstructor {
+                @Inject
+                public MultiQualifiersInjectConstructor(@Named("ChoseOne") @Skywalker Dependency dependency) {
+
+                }
+            }
+
+            @Test
+            public void should_throw_exception_if_multi_qualifiers_given() {
+                assertThrows(IllegalComponentException.class,()->new InjectionProvider<>(MultiQualifiersInjectConstructor.class));
+            }
         }
     }
 
@@ -257,6 +269,16 @@ public class InjectTest {
 
                 assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))
                 }, provider.getDependencies().toArray());
+            }
+
+            static class MultiQualifiersInjectFiled {
+                @Inject
+                @Named("ChoseOne") @Skywalker Dependency dependency;
+            }
+
+            @Test
+            public void should_throw_exception_if_multi_qualifiers_given() {
+                assertThrows(IllegalComponentException.class,()->new InjectionProvider<>(MultiQualifiersInjectFiled.class));
             }
         }
     }
@@ -406,6 +428,7 @@ public class InjectTest {
 
             static class InjectMethod {
                 Dependency dependency;
+
                 @Inject
                 void install(@Named("ChoseOne") Dependency dependency) {
                     this.dependency = dependency;
@@ -426,6 +449,18 @@ public class InjectTest {
 
                 assertArrayEquals(new ComponentRef<?>[]{ComponentRef.of(Dependency.class, new NamedLiteral("ChoseOne"))
                 }, provider.getDependencies().toArray());
+            }
+
+            static class MultiQualifiersInjectMethod {
+                @Inject
+                void install(@Named("ChoseOne") @Skywalker Dependency dependency) {
+
+                }
+            }
+
+            @Test
+            public void should_throw_exception_if_multi_qualifiers_given() {
+                assertThrows(IllegalComponentException.class,()->new InjectionProvider<>(MultiQualifiersInjectMethod.class));
             }
         }
     }

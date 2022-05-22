@@ -16,6 +16,7 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
     private Constructor<T> injectConstructor;
     private List<Field> injectFields;
     private List<Method> injectMethods;
+    private List<ComponentRef> dependencies;
 
     public InjectionProvider(Class<T> component) {
         if (Modifier.isAbstract(component.getModifiers())) throw new IllegalComponentException();
@@ -28,6 +29,8 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
 
         if (injectMethods.stream().anyMatch(m -> m.getTypeParameters().length != 0))
             throw new IllegalComponentException();
+
+        this.dependencies = getDependencies();
     }
 
     @Override
@@ -58,18 +61,15 @@ class InjectionProvider<T> implements ContextConfig.ComponentProvider<T> {
         return ComponentRef.of(field.getGenericType(), qualifier);
     }
 
-    private static Annotation getQualifier(Field field) {
-        return stream(field.getAnnotations()).filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class))
-                .findFirst().orElse(null);
-    }
-
     private ComponentRef<?> toComponentRef(Parameter parameter) {
         return ComponentRef.of(parameter.getParameterizedType(), getQualifier(parameter));
     }
 
-    private static Annotation getQualifier(Parameter parameter) {
-        return stream(parameter.getAnnotations()).filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class))
-                .findFirst().orElse(null);
+    private static Annotation getQualifier(AnnotatedElement element) {
+        List<Annotation> qualifiers = stream(element.getAnnotations())
+                .filter(a -> a.annotationType().isAnnotationPresent(Qualifier.class)).toList();
+        if (qualifiers.size() > 1) throw new IllegalComponentException();
+        return qualifiers.stream().findFirst().orElse(null);
     }
 
     private static <T> List<Method> getInjectMethods(Class<T> component) {
