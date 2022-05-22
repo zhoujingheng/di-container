@@ -2,6 +2,7 @@ package flynn.tdd.di;
 
 import jakarta.inject.Inject;
 import jakarta.inject.Provider;
+import jakarta.inject.Qualifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Nested;
@@ -15,6 +16,7 @@ import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.stream.Stream;
 
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -47,9 +49,9 @@ public class ContextTest {
 //            Dependency dependency = new Dependency() {
 //            };
 //            config.bind(Dependency.class, dependency);
-//            config.bind(Component.class, componentType);
+//            config.bind(TestComponent.class, componentType);
 //
-//            Optional<Component> component = config.getContext().get(Component.class);
+//            Optional<TestComponent> component = config.getContext().get(TestComponent.class);
 //
 //            assertTrue(component.isPresent());
 //            assertSame(dependency, component.get().dependency());
@@ -114,62 +116,48 @@ public class ContextTest {
         public class WithQualifier {
 
             @Test
-            public void should_bind_instance_with_qualifier() {
+            public void should_bind_instance_with_multi_qualifiers() {
                 TestComponent instance = new TestComponent() {
 
                 };
-                config.bind(TestComponent.class, instance, new NamedLiteral("ChosenOne"));
-                Context context = config.getContext();
-                TestComponent chosenOne =context.get(ComponentRef.of(TestComponent.class, new NamedLiteral("ChosenOne"))).get();
-                assertSame(instance, chosenOne);
-            }
-
-
-            @Test
-            public void should_bind_component_with_qualifier() {
-                Dependency dependency = new Dependency() {
-
-                };
-                config.bind(Dependency.class,dependency);
-                config.bind(InjectTest.ConstructorInjection.Injection.InjectConstructor.class,
-                        InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new NamedLiteral("ChosenOne"));
-                Context context = config.getContext();
-                InjectTest.ConstructorInjection.Injection.InjectConstructor chosenOne =context.get(ComponentRef.of(InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new NamedLiteral("ChosenOne"))).get();
-                assertSame(dependency, chosenOne.dependency);
-            }
-            //TODO binding component with multi qualifier
-            @Test
-            public void should_bind_instance_with_multi_qualifier() {
-                TestComponent instance = new TestComponent() {
-
-                };
-                config.bind(TestComponent.class, instance, new NamedLiteral("ChosenOne"),new NamedLiteral("skywalker"));
+                config.bind(TestComponent.class, instance, new NamedLiteral("ChosenOne"), new SkywalkerLiteral());
 
                 Context context = config.getContext();
-                TestComponent chosenOne =context.get(ComponentRef.of(TestComponent.class, new NamedLiteral("ChosenOne"))).get();
-                TestComponent skywalker =context.get(ComponentRef.of(TestComponent.class, new NamedLiteral("skywalker"))).get();
+                TestComponent chosenOne = context.get(ComponentRef.of(TestComponent.class, new NamedLiteral("ChosenOne"))).get();
+                TestComponent skywalker = context.get(ComponentRef.of(TestComponent.class, new SkywalkerLiteral())).get();
 
                 assertSame(instance, chosenOne);
                 assertSame(instance, skywalker);
             }
 
             @Test
-            public void should_bind_component_with_multi_qualifier() {
+            public void should_bind_component_with_multi_qualifiers() {
                 Dependency dependency = new Dependency() {
 
                 };
-                config.bind(Dependency.class,dependency);
+                config.bind(Dependency.class, dependency);
                 config.bind(InjectTest.ConstructorInjection.Injection.InjectConstructor.class,
                         InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new NamedLiteral("ChosenOne")
-                        , new NamedLiteral("skywalker"));
+                        , new SkywalkerLiteral());
                 Context context = config.getContext();
-                InjectTest.ConstructorInjection.Injection.InjectConstructor chosenOne =context.get(ComponentRef.of(InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new NamedLiteral("ChosenOne"))).get();
-                InjectTest.ConstructorInjection.Injection.InjectConstructor skywalker =context.get(ComponentRef.of(InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new NamedLiteral("skywalker"))).get();
+                InjectTest.ConstructorInjection.Injection.InjectConstructor chosenOne = context.get(ComponentRef.of(InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new NamedLiteral("ChosenOne"))).get();
+                InjectTest.ConstructorInjection.Injection.InjectConstructor skywalker = context.get(ComponentRef.of(InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new SkywalkerLiteral())).get();
                 assertSame(dependency, chosenOne.dependency);
                 assertSame(dependency, skywalker.dependency);
             }
 
             //TODO throw illegal component if illegal qualifier
+            @Test
+            public void should_throw_exception_if_illegal_qualifier_given_to_instance() {
+                TestComponent instance = new TestComponent() {
+                };
+                assertThrows(IllegalComponentException.class, () -> config.bind(TestComponent.class, instance, new TestLiteral()));
+            }
+
+            @Test
+            public void should_throw_exception_if_illegal_qualifier_given_to_component() {
+                assertThrows(IllegalComponentException.class, () -> config.bind(InjectTest.ConstructorInjection.Injection.InjectConstructor.class, InjectTest.ConstructorInjection.Injection.InjectConstructor.class, new TestLiteral()));
+            }
         }
     }
 
@@ -330,12 +318,35 @@ public class ContextTest {
             assertTrue(context.get(ComponentRef.of(TestComponent.class)).isPresent());
         }
     }
+}
 
-    record NamedLiteral(String value) implements jakarta.inject.Named {
+record NamedLiteral(String value) implements jakarta.inject.Named {
 
-        @Override
-        public Class<? extends Annotation> annotationType() {
-            return jakarta.inject.Named.class;
-        }
+    @Override
+    public Class<? extends Annotation> annotationType() {
+        return jakarta.inject.Named.class;
+    }
+}
+
+@java.lang.annotation.Documented
+@java.lang.annotation.Retention(RUNTIME)
+@jakarta.inject.Qualifier
+@interface Skywalker {
+
+}
+
+record SkywalkerLiteral() implements Skywalker {
+
+    @Override
+    public Class<? extends Annotation> annotationType() {
+        return Skywalker.class;
+    }
+}
+
+record TestLiteral() implements Test {
+
+    @Override
+    public Class<? extends Annotation> annotationType() {
+        return Test.class;
     }
 }
