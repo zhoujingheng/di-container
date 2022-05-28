@@ -53,10 +53,6 @@ public class ComponentRef<ComponentType> {
         return container;
     }
 
-    public Class<?> getComponentType() {
-        return component.type();
-    }
-
     public boolean isContainer() {
         return container != null;
     }
