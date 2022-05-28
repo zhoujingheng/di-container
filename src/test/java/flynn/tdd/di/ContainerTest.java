@@ -60,11 +60,6 @@ interface Dependency {
 interface AnotherDependency {
 }
 
-class ComponentWithDefaultConstructor implements TestComponent {
-    public ComponentWithDefaultConstructor() {
-    }
-}
-
 class ComponentWithInjectConstructor implements TestComponent {
     private Dependency dependency;
 
@@ -91,29 +86,6 @@ class ComponentWithMultiInjectConstructors implements TestComponent {
 
 class ComponentWithNoInjectNorDefaultConstructor implements TestComponent {
     public ComponentWithNoInjectNorDefaultConstructor(String name) {
-    }
-}
-
-class DependencyWithInjectConstructor implements Dependency {
-    private String dependency;
-
-    @Inject
-    public DependencyWithInjectConstructor(String dependency) {
-        this.dependency = dependency;
-    }
-
-    public String getDependency() {
-        return dependency;
-    }
-}
-
-class DependencyDependedOnComponent implements Dependency {
-
-    private TestComponent component;
-
-    @Inject
-    public DependencyDependedOnComponent(TestComponent component) {
-        this.component = component;
     }
 }
 
